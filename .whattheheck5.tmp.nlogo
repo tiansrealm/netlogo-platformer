@@ -1,33 +1,20 @@
 globals
 [ frameNum frameTime
-  endofSceneFrame ; determine framenum b4 changing to new scene
   towalk
   forcarrotx forcarroty
   level
   gravity
-  bunnyWho
+  bunnyWho carrotWho
   bunnyAniFrame
-  time-left; for timer
-  gameover; is true if time runs out or if bunny is dead
-  scene ; scene number
+  time-left
+  gameover
+  scene
 ]
-turtles-own [
-name
-velX velY acelY
-grounded
-baseShape
-weaponWho
-aniFrame
-state
-hp HPBarWho
-power
-onWhichPlat shapeRatio]
-
+turtles-own [name velX velY acelY grounded baseShape weaponWho aniFrame state hp HPBarWho power onWhichPlat shapeRatio]
 ;   name is used to identify special turtles
 ;   grounded is for  jump logic
 ;   baseShape is for changing shapes easily with suffix
 ;shapeRatio describes hoow big the actual shape of turtle is vs size
-
 platforms-own [isEdge]
 bunnies-own [moveCounter toJump]
 snakes-own [lastTurnPlat]
@@ -52,6 +39,7 @@ to setup
  set-default-shape snakes "snakel"
  set-default-shape portals "portal"
  set gravity -25
+ set frameTime 0.1
 
  ;setups
  ask patches [set pcolor 2]
@@ -62,83 +50,103 @@ to setup
  createBunny 0 -100
  ask patch 270 -200 [set plabel "by Eve Lin"]
  set gameover "false"
+ set scene 1
 end
 
 to go
-  no-display
-  set frameTime 0.1
-
- if frameNum = 0 [
-  clear-turtles
-  clear-patches
-  clear-drawing
-  set scene 1
-  reset-timer
-  ask turtles [set hidden? false]
-  set time-left 180
-  import-drawing "village.jpg"
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 50 90 set color 11 set isEdge true]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 90 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 90 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 200 90 set color 11 ]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 250 90 set color 11 set isEdge true]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -80 50 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -150 -45 set color 11]
- crt 1 [set shape "healthbar8" set baseShape "healthbar" setxy -240 -220 set size 200 set heading 0]
-  createBunny -340 -100
-  ask patch 270 220 [set plabel "WELCOME. You are the bunny."]
-  ]
-
-  if frameNum = 10 [
-    createSnake 180 130
-    createSnake 120 130
-    createSnake 300 -100
-    createSnake 250 -100
-    createSnake 150 -100
-    ask patch 270 220 [set plabel "Defeat all monsters to move to the next scene"]
-  ]
-  ;stayonplatform
-
-  if scene = 2 and FrameNum = EndofSceneFrame + 1
-  [reset-timer
-   import-drawing "treeplace.png"
-   ask bunnies
-    [ setxy -340 -100
+  every frameTime [
+    no-display
+    if frameNum = 0 [  ;setup scene
+      clear-drawing
+      clear-patches
+      ask turtles [if breed != bunnies and breed != carrots [die]]
+      reset-timer
+      set time-left 150
+      ask patch 270 220 [set plabel "WELCOME. You are the bunny."]
+    ;frameNum != 0  ; do scene logics
+      setUpScenes
     ]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 90 set color 11 set isEdge true]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 90 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 200 90 set color 11 ]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 250 90 set color 11 ]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 300 90 set color 11 set isEdge true]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -50 40 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy 0 40 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -150 -45 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -180 90 set color 11 set isEdge true]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -230 90 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -280 90 set color 11]
-  create-platforms 1 [set shapeRatio 1 set size 50 setxy -330 90 set color 11 set isEdge true]
+    if scene = 1 [
+      if frameNum = 10
+      [createSnake 180 130
+      createSnake 120 130
+      createSnake 300 -100
+      createSnake 250 -100
+      createSnake 150 -100
+      ask patch 270 220 [set plabel "Defeat all monsters to move to the next scene"]
+      ]
+    ]
+    ;stayonplatform
+    ask (turtle-set bunnies snakes) [update]
+    domonsterlogic
+    time
+    updateSceneclear
+    ;if gameover = "true" [stop]
+    set frameNum frameNum + 1
+    display
   ]
-
-  ask (turtle-set bunnies snakes) [update]
-  domonsterlogic
-  time
-  updateSceneclear
-  if gameover = "true" [stop]
-  set frameNum frameNum + 1
-  display
-  wait frameTime
 end
 
+to setUpScenes
+  if scene = 1
+    [
+      import-drawing "village.jpg"
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 50 90 set color 11 set isEdge true]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 90 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 90 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 200 90 set color 11 ]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 250 90 set color 11 set isEdge true]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -80 50 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -150 -45 set color 11]
+      crt 1 [set shape "healthbar8" set baseShape "healthbar" setxy -240 -220 set size 200 set heading 0]
+      createBunny -340 -100
+    ]
+
+    if scene = 2
+    [  show "setting scene 2"
+      import-drawing "treeplace.png"
+      ask bunnies [setxy -340 -100]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 90 set color 11 set isEdge true]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 90 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 200 90 set color 11 ]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 250 90 set color 11 ]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 300 90 set color 11 set isEdge true]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -50 40 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy 0 40 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -150 -45 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -180 90 set color 11 set isEdge true]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -230 90 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -280 90 set color 11]
+      create-platforms 1 [set shapeRatio 1 set size 50 setxy -330 90 set color 11 set isEdge true]
+    ]
+
+    if scene = 3
+      [
+       import-drawing "forest.png"
+       ask bunnies [ setxy -340 -100]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 40 set color 11 set isEdge true]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 40 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 200 40 set color 11 ]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 250 40 set color 11 ]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 300 40 set color 11 set isEdge true]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -50 -45 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy 0 40 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -130 90 set color 11 set isEdge true]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -180 90 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -230 90 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -280 90 set color 11]
+        create-platforms 1 [set shapeRatio 1 set size 50 setxy -330 90 set color 11 set isEdge true]
+      ]
+end
 to time
-  if int (180 - timer) != time-left and time-left >= 0 [
-        set time-left int (180 - timer)
+  if int (150 - timer) != time-left and time-left >= 0 [
+        set time-left int (150 - timer)
     ShowTimeLeft time-left
   ]
   if time-left <= 0
     [ShowTimeLeft 0
      ask patch 270 220 [set plabel "LOL. You ran out of time. Click setup to play again."]
      ask bunnies [set shape "skull"]
-     ask carrots [set hidden? true]
      set gameover "true"]
 end
 to ShowTimeleft [tl]
@@ -162,6 +170,7 @@ to createBunny [x y]
   create-carrots 1 [
     set baseShape "carrot"
    setxy x + 40 y - 10 set size 80 set heading 180
+    set carrotWho who
   ]
 end
 
@@ -180,9 +189,6 @@ to createSnake [x y]
     set baseshape "healthbar"
     setxy x y + 30 set size 50 set heading 0
   ]
-end
-to createportal [x y]
-  create-portals 1 [setxy x y set size 150 set heading 0 set shapeRatio 1]
 end
 
 to words [string startx starty big hue]   ;create  turtle letters on screen based on string given
@@ -206,8 +212,16 @@ end
 ;---------------------------------------------------------------------------Bunny/player logic
 to swing
   ask bunnies [
-    if state != "swing"[
+    if state != "swing" and state != "throw" [
        set state "swing"
+       set aniFrame 3
+    ]
+  ]
+end
+to throw
+  ask bunnies [
+    if state != "throw" and state != "swing" [
+       set state "throw"
        set aniFrame 3
     ]
   ]
@@ -354,7 +368,24 @@ to updateAni ;called for bunny and monsters
           set hp hp - 1]]
       ]
       if state = "none"[
-        ask turtle weaponWho [set heading 180]
+        let bunnyx xcor
+        let bunnyy ycor
+        ask turtle weaponWho
+        [
+         setxy bunnyx + 40 bunnyy - 10
+         set heading 180
+        ]
+      ]
+      if state = "throw" [
+        let throwdistance 90
+        let throwheading 180 + 90
+         if dirSuffix = "l"
+        [ set throwheading throwheading * -1
+          set throwdistance throwdistance * -1
+        ]
+        ask turtle weaponWho [if xcor < 310 and xcor > -310 [ set heading throwheading set xcor xcor + throwdistance]]
+      ask snakes [if isCollideWithTurt? carrotAgent "circle" [
+          set hp hp - 1]]
       ]
   ]
 
@@ -386,35 +417,43 @@ to changeShape [suffix]
 end
 
 to updateHealth
-   if breed != bunnies [if hp <= 0 [set state "dead" set hp 0 set shape "skull" set velx 0
-      ask turtle HPBarwho [set hidden? true]]
+   if breed != bunnies [if hp <= 0 [ask turtle HPBarwho [die] set hp 0 die]
   if hasHPBar? and state != "dead" [
     ask turtle HPBarWho[changeShape [hp] of myself]
   ]
   ]
 
   ask bunnies [ if state != "dead" [
-    ask turtle 7 [changeShape [int hp] of myself]
+    ;ask turtle 7 [changeShape [int hp] of myself]
     if hp <= 0 [set hp 0 set state "dead" set shape "bunnyskull"
    ask patch 270 220 [set plabel "LOL. You dead. Click setup to play again."]
-      ask turtle weaponwho [set hidden? true] set gameover "true"]]
+       set gameover "true"]]
   ]
 end
 
 to updateSceneclear
-  if sceneclear?
+  let sceneclear false
+
+if count snakes <= 0
+  [set sceneclear true]
+
+  if sceneclear
   [ if scene = 1
     [ask patch 270 220 [set plabel "Scene 1 CLEARED! Go to the portal"]
     createportal -80 80
      ask portals [if isCollideWithTurt? bunnyagent "circle"
-        [ set hidden? true
-          ask bunnyagent [set hidden? true]
-          set endofSceneFrame FrameNum
+        [
+          set frameNum -1
           set scene 2
+          ]
         ]
       ]
     ]
-  ]
+
+end
+
+to createportal [x y]
+  create-portals 1 [setxy x y set size 150 set heading 0 set shapeRatio 1]
 end
 ;--------------------------------------------enemies AI
 
@@ -509,15 +548,15 @@ to-report string-to-list [ s ]
     [ fput first s string-to-list but-first s ]
 end
 
-to-report sceneclear?
-  report count snakes with [shape = "skull"] >= 5
-end
 ;--------------------------------------------------------------------------turtle reporters
 
 to-report bunnyAgent
   report turtle bunnyWho
 end
 
+to-report carrotAgent
+  report turtle carrotWho
+end
 ;-----------------------------------------------------------report true/false
 
 to-report canShiftXY? [shiftX shiftY]
@@ -617,10 +656,6 @@ end
 to-report rectBot
   report ycor - size * shapeRatio / 2
 end
-
-
-
-
 
 
 @#$#@#$#@

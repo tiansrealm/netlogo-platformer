@@ -9,7 +9,6 @@ globals
   bunnyAniFrame
   time-left; for timer
   gameover; is true if time runs out or if bunny is dead
-  sceneclear ; if all monster gone sceneclear is true
   scene ; scene number
 ]
 turtles-own [
@@ -66,6 +65,7 @@ to setup
 end
 
 to go
+  no-display
   set frameTime 0.1
 
  if frameNum = 0 [
@@ -104,8 +104,6 @@ to go
    import-drawing "treeplace.png"
    ask bunnies
     [ setxy -340 -100
-      set hidden? false
-      ask weaponWho [set hidden? false]
     ]
   create-platforms 1 [set shapeRatio 1 set size 50 setxy 100 90 set color 11 set isEdge true]
   create-platforms 1 [set shapeRatio 1 set size 50 setxy 150 90 set color 11]
@@ -127,6 +125,7 @@ to go
   updateSceneclear
   if gameover = "true" [stop]
   set frameNum frameNum + 1
+  display
   wait frameTime
 end
 
@@ -403,15 +402,10 @@ to updateHealth
 end
 
 to updateSceneclear
-ifelse count snakes with [shape = "skull"] >= 5
-  [set sceneclear true]
-  [set sceneclear false]
-
-  if sceneclear
+  if sceneclear?
   [ if scene = 1
     [ask patch 270 220 [set plabel "Scene 1 CLEARED! Go to the portal"]
     createportal -80 80
-    show "created port"
      ask portals [if isCollideWithTurt? bunnyagent "circle"
         [ set hidden? true
           ask bunnyagent [set hidden? true]
@@ -431,17 +425,18 @@ to doMonsterLogic ;observer call
   ]
 end
 to wanderingAI
+  let defaultSpeed 50
   ;state check
   if state = "none" [
     set state "walking"
   ]
   if state = "walking" [
-    if velX = 0[
-      set velx 50
+    if velX = 0 or xcor = min-pxcor[
+      set velx defaultSpeed
     ]
 
     ;turn if on edge of world
-    if xcor = max-pxcor or xcor = min-pxcor [set velx velx * -1]
+    if xcor = max-pxcor[set velx -1 * defaultSpeed]
 
     ;turn if on edge of plat
     if onWhichPlat != 0 [
@@ -512,6 +507,10 @@ to-report string-to-list [ s ]
   report ifelse-value empty? s
     [ [] ]
     [ fput first s string-to-list but-first s ]
+end
+
+to-report sceneclear?
+  report count snakes with [shape = "skull"] >= 5
 end
 ;--------------------------------------------------------------------------turtle reporters
 

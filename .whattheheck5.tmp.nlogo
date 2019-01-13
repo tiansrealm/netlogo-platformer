@@ -56,33 +56,18 @@ end
 to go
   every frameTime [
     no-display
-    if frameNum = 0 [  ;setup scene
-      clear-drawing
-      clear-patches
-      ask turtles [if breed != bunnies and breed != carrots [die]]
-      reset-timer
-      set time-left 150
-      ask patch 270 220 [set plabel "WELCOME. You are the bunny."]
-    ;frameNum != 0  ; do scene logics
-      setUpScenes
-    ]
-    if scene = 1 [
-      if frameNum = 10
-      [createSnake 180 130
-      createSnake 120 130
-      createSnake 300 -100
-      createSnake 250 -100
-      createSnake 150 -100
-      ask patch 270 220 [set plabel "Defeat all monsters to move to the next scene"]
-      ]
-    ]
-    ;stayonplatform
+
+    updateScene
+
+    ;turtle logics. turtle updates
     ask (turtle-set bunnies snakes) [update]
     domonsterlogic
+
+    ;world updates
     time
-    updateSceneclear
     ;if gameover = "true" [stop]
     set frameNum frameNum + 1
+
     display
   ]
 end
@@ -99,7 +84,7 @@ to setUpScenes
       create-platforms 1 [set shapeRatio 1 set size 50 setxy -80 50 set color 11]
       create-platforms 1 [set shapeRatio 1 set size 50 setxy -150 -45 set color 11]
       crt 1 [set shape "healthbar8" set baseShape "healthbar" setxy -240 -220 set size 200 set heading 0]
-      createBunny -340 -100
+      ask bunnies [setxy -340 -100]
     ]
 
     if scene = 2
@@ -270,6 +255,31 @@ to update ; use only on moving turtles
   updatePos
   updateAni
   updateHealth
+end
+
+to updateScene
+  if frameNum = 0 [
+      clear-drawing
+      clear-patches
+      ask turtles [if breed != bunnies and breed != carrots [die]]
+      reset-timer
+      set time-left 150
+      ask patch 270 220 [set plabel "WELCOME. You are the bunny."]
+    ;frameNum != 0  ; do scene logics
+      setUpScenes
+  ]
+  if scene = 1 [
+      if frameNum = 10
+      [createSnake 180 130
+      createSnake 120 130
+      createSnake 300 -100
+      createSnake 250 -100
+      createSnake 150 -100
+      ask patch 270 220 [set plabel "Defeat all monsters to move to the next scene"]
+      ]
+  ]
+  checkSceneClear  ;formally updateSceneClear
+  updateBighealthBar
 end
 
 to updatePos ;called from update

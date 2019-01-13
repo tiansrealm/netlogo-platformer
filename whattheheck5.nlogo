@@ -66,6 +66,7 @@ to go
     ;frameNum != 0  ; do scene logics
       setUpScenes
     ]
+    ;scene logics
     if scene = 1 [
       if frameNum = 10
       [createSnake 180 130
@@ -76,9 +77,12 @@ to go
       ask patch 270 220 [set plabel "Defeat all monsters to move to the next scene"]
       ]
     ]
-    ;stayonplatform
+
+    ;turtle logics
     ask (turtle-set bunnies snakes) [update]
     domonsterlogic
+
+    ;updates
     time
     updateSceneclear
     ;if gameover = "true" [stop]

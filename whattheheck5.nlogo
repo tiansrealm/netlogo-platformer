@@ -1,21 +1,34 @@
 globals
-[ frameNum frameTime endofSceneFrame
+[ frameNum frameTime
+  endofSceneFrame ; determine framenum b4 changing to new scene
   towalk
   forcarrotx forcarroty
   level
   gravity
   bunnyWho
   bunnyAniFrame
-  time-left
-  gameover
-  sceneclear
-  scene
+  time-left; for timer
+  gameover; is true if time runs out or if bunny is dead
+  sceneclear ; if all monster gone sceneclear is true
+  scene ; scene number
 ]
-turtles-own [name velX velY acelY grounded baseShape weaponWho aniFrame state hp HPBarWho power onWhichPlat shapeRatio]
+turtles-own [
+name
+velX velY acelY
+grounded
+baseShape
+weaponWho
+aniFrame
+state
+hp HPBarWho
+power
+onWhichPlat shapeRatio]
+
 ;   name is used to identify special turtles
 ;   grounded is for  jump logic
 ;   baseShape is for changing shapes easily with suffix
 ;shapeRatio describes hoow big the actual shape of turtle is vs size
+
 platforms-own [isEdge]
 bunnies-own [moveCounter toJump]
 snakes-own [lastTurnPlat]
@@ -168,6 +181,9 @@ to createSnake [x y]
     set baseshape "healthbar"
     setxy x y + 30 set size 50 set heading 0
   ]
+end
+to createportal [x y]
+  create-portals 1 [setxy x y set size 150 set heading 0 set shapeRatio 1]
 end
 
 to words [string startx starty big hue]   ;create  turtle letters on screen based on string given
@@ -388,28 +404,23 @@ end
 
 to updateSceneclear
 ifelse count snakes with [shape = "skull"] >= 5
-  [set sceneclear "true"]
-  [set sceneclear "false"]
+  [set sceneclear true]
+  [set sceneclear false]
 
-  if sceneclear = true
+  if sceneclear
   [ if scene = 1
     [ask patch 270 220 [set plabel "Scene 1 CLEARED! Go to the portal"]
     createportal -80 80
+    show "created port"
      ask portals [if isCollideWithTurt? bunnyagent "circle"
         [ set hidden? true
-          ask bunnyagent [set hidden? true
-          ask weaponwho [set hidden? true]
+          ask bunnyagent [set hidden? true]
           set endofSceneFrame FrameNum
           set scene 2
-          ]
         ]
       ]
     ]
   ]
-end
-
-to createportal [x y]
-  create-portals 1 [setxy x y set size 150 set heading 0]
 end
 ;--------------------------------------------enemies AI
 
@@ -607,6 +618,8 @@ end
 to-report rectBot
   report ycor - size * shapeRatio / 2
 end
+
+
 
 
 
